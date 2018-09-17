@@ -45,7 +45,7 @@ namespace BVEMapMaker
       VNum = VersionNum;
       if (VNum == 100)
       {
-        BVEMapHeader = "BveTs Map 2.02";
+        BVEMapHeader = "BveTs Map 2.02\n";
       }
     }
 
@@ -147,6 +147,47 @@ namespace BVEMapMaker
       public void Change(double D, double R) => ListAdd(D, "Curve.Change(" + R.ToString() + ");");
     }
 
+    /// <summary>
+    /// 自軌道の勾配に関するクラス
+    /// </summary>
+    public class Gradient
+    {
+      /// <summary>
+      /// 指定の距離程から縦曲線を開始する
+      /// </summary>
+      /// <param name="D">開始する距離程[m]</param>
+      public void BeginTransition(double D) => ListAdd(D, "Gradient.BeginTransition();");
+
+      /// <summary>
+      /// 指定の距離程で縦曲線を終了し、勾配を開始する
+      /// </summary>
+      /// <param name="D">開始する距離程[m]</param>
+      /// <param name="G">勾配の大きさ[‰](正:上昇 / 負:下降)</param>
+      public void Begin(double D, double G) => ListAdd(D, "Gradient.Begin(" + G.ToString() + ");");
+
+      /// <summary>
+      /// 指定の距離程で縦曲線を終了し、勾配を終了する(0‰にする)
+      /// </summary>
+      /// <param name="D">終了する距離程[m]</param>
+      public void End(double D) => ListAdd(D, "Gradient.End();");
+
+      /// <summary>
+      /// 指定の距離程に勾配を設定する(Interpolateの勾配は線形補完される)
+      /// </summary>
+      /// <param name="D">設定する距離程[m]</param>
+      /// <param name="G">勾配の大きさ[‰](正:上昇 / 負:下降)</param>
+      public void Interpolate(double D, double G) => ListAdd(D, "Gradient.Interpolate(" + G.ToString() + ");");
+      /// <summary>
+      /// 指定の距離程まで、一つ前に設定された勾配を継続する。
+      /// </summary>
+      /// <param name="D">設定する距離程[m]</param>
+      public void Interpolate(double D) => ListAdd(D, "Gradient.Interpolate();");
+    }
+
+    public class Track
+    {
+      public void XInterpolate(double D, string TN, double x, double r) => ListAdd(D, "");
+    }
 
     /// <summary>
     /// OutputListに構文を追加する
