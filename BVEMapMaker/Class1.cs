@@ -6,11 +6,19 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-namespace BVEMapMaker
+namespace TRtec.BVEMapMaker
 {
   public class Map
   {
     //改行は自動挿入
+    public Map(int VersionNum)
+    {
+      VNum = VersionNum;
+      if (VNum == 100)
+      {
+        BVEMapHeader = "BveTs Map 2.02\n";
+      }
+    }
 
     /// <summary>
     /// OutputするSyntaxのListのためのclass
@@ -30,22 +38,48 @@ namespace BVEMapMaker
       /// <summary>
       /// SyntaxのList Addしてく。
       /// </summary>
-      public List<string> Syntax;
+      public List<string> Syntax = new List<string>();
     }
     static List<OutputList> Output = new List<OutputList>();
-    StreamWriter writer = new StreamWriter("Map.txt", true, Encoding.UTF8);
     static string BVEMapHeader;
     int VNum = new int();
     /// <summary>
     /// BVEMapMakerを初期化します。
     /// </summary>
     /// <param name="VersionNum">MapMakerの利用バージョン</param>
-    public Map(int VersionNum)
+    public void WriteMap(string MapName)
     {
-      VNum = VersionNum;
-      if (VNum == 100)
+      using(StreamWriter sw=new StreamWriter(MapName, false, Encoding.UTF8))
       {
-        BVEMapHeader = "BveTs Map 2.02\n";
+        sw.WriteLine(BVEMapHeader);
+        Console.WriteLine(BVEMapHeader);
+        //Output.Sort((a, b) => (int)(a.Distance - b.Distance));
+        //Console.WriteLine(Output.Count());
+        //Console.WriteLine(Output[4]);
+        //Console.ReadKey(false);
+        for (int i = 0; i < Output.Count; i++)
+        {
+          try
+          {
+            sw.WriteLine(Output[i].Distance.ToString() + ";");
+            Console.WriteLine(Output[i].Distance.ToString() + ";");
+            for (int n = 0; n < Output[i].Syntax.Count(); n++)
+            {
+              sw.WriteLine(Output[i].Syntax[n]);
+              Console.WriteLine(Output[i].Syntax[n]);
+            }
+          }
+          catch(Exception e)
+          {
+            Console.WriteLine(e.Message);
+            Console.WriteLine("[Enter]");
+            Console.ReadKey(false);
+          }
+        }
+        sw.Flush();
+        Output.Clear();
+        Console.WriteLine("MapWrite Comp. [Enter]");
+        Console.ReadKey(false);
       }
     }
 
@@ -146,7 +180,6 @@ namespace BVEMapMaker
       /// <param name="R">半径[m](正:右曲線 / 負:左曲線)</param>
       public void Change(double D, double R) => ListAdd(D, "Curve.Change(" + R.ToString() + ");");
     }
-
     /// <summary>
     /// 自軌道の勾配に関するクラス
     /// </summary>
@@ -183,7 +216,6 @@ namespace BVEMapMaker
       /// <param name="D">設定する距離程[m]</param>
       public void Interpolate(double D) => ListAdd(D, "Gradient.Interpolate();");
     }
-
     /// <summary>
     /// 他軌道の位置などを設定するクラス
     /// </summary>
@@ -364,7 +396,6 @@ namespace BVEMapMaker
       }
 
     }
-
     /// <summary>
     /// ストラクチャの位置などを設定するクラス
     /// </summary>
@@ -495,6 +526,7 @@ namespace BVEMapMaker
 
       private void PutBetween(double D, string Str, string TN1, string TN2, string Flag) => ListAdd(D, "Structure['" + Str + "'].PutBetween(" + TN1 + ", " + TN2 + Flag.ToString() + ")");
     }
+
     /// <summary>
     /// ストラクチャの連続配置をするクラス=>未完
     /// </summary>
@@ -630,18 +662,133 @@ namespace BVEMapMaker
     }
 
     /// <summary>
+    /// Tetsu Otterが使いたいと思った機能を実装したクラス
+    /// </summary>
+    public class TR
+    {
+      /// <summary>
+      /// TCLとCCLから曲線を設置する
+      /// </summary>
+      /// <param name="BTCDistance">BTCの距離程[m]</param>
+      /// <param name="TCL">緩和曲線長[m]</param>
+      /// <param name="CCL">円曲線長[m]</param>
+      /// <param name="Radius">半径[m](正:右曲線 / 負:左曲線)</param>
+      /// <param name="Cant">カント[m](半径と正負を一致させる)</param>
+      public void TCLCCLtoCurve(double BTCDistance, double TCL, double CCL, double Radius, double Cant) => TCLCCLtoCurve(BTCDistance, TCL, CCL, TCL, Radius, Cant);
+      /// <summary>
+      /// 始端側TCL, 終端側TCLとCCLから曲線を設置する
+      /// </summary>
+      /// <param name="BTCDistance">BTCの距離程[m]</param>
+      /// <param name="BTCL">始端側緩和曲線長[m]</param>
+      /// <param name="ETCL">終端側緩和曲線長[m]</param>
+      /// <param name="CCL">円曲線長[m]</param>
+      /// <param name="Radius">半径[m](正:右曲線 / 負:左曲線)</param>
+      /// <param name="Cant">カント[m](半径と正負を一致させる)</param>
+      public void TCLCCLtoCurve(double BTCDistance, double BTCL, double CCL, double ETCL, double Radius, double Cant)
+      {
+        Curve c = new Curve();
+        c.Interpolate(BTCDistance, 0, 0);
+        c.Interpolate(BTCDistance + BTCL, Radius, Cant);
+        c.Interpolate(BTCDistance + BTCL + CCL, Radius, Cant);
+        c.Interpolate(BTCDistance + BTCL + CCL + ETCL, Radius, Cant);
+      }
+
+      /// <summary>
+      /// 勾配標建植位置と勾配の大きさ、縦曲線半径を用いて自動で勾配の変化を作る
+      /// <remarks><para>日本大百科全書(ニッポニカ)によると...</para>
+      /// <para>普通鉄道の場合、縦R=2000(但し平面Rが600m以下の場合は縦R=3000)但し勾配変化が1000分の10以下の場合は省略可
+      /// 新幹線の場合、縦R=10,000(但し最高250km/h以下の区間は縦R=5000)</para>
+      /// </remarks>
+      /// </summary>
+      /// <param name="GradSignDist">勾配標建植位置の距離程[m]</param>
+      /// <param name="StartGrad">始端側勾配[‰]</param>
+      /// <param name="EndGrad">終端側勾配[‰]</param>
+      /// <param name="Radius">縦曲線半径[m]</param>
+      public void GradientChange(double GradSignDist, double StartGrad, double EndGrad, double Radius)
+      {
+        Gradient g = new Gradient();
+        double Long = Radius * Math.Sin(Math.Atan((StartGrad - EndGrad) / (1 + (StartGrad * EndGrad))));
+        if (StartGrad == 0)
+        {
+          g.BeginTransition(GradSignDist - (Long / 2));
+          g.Begin(GradSignDist + (Long / 2), EndGrad);
+        }else if (EndGrad == 0)
+        {
+          g.BeginTransition(GradSignDist - (Long / 2));
+          g.End(GradSignDist + (Long / 2));
+        }
+        else
+        {
+          double slong = Long * StartGrad / (StartGrad + EndGrad);
+          double elong = Long * EndGrad / (StartGrad + EndGrad);
+          g.BeginTransition(GradSignDist - slong);
+          g.Begin(GradSignDist + elong, EndGrad);
+        }
+      }
+
+      /// <summary>
+      /// 1線から2線へ分岐する分岐器を設置する。(自線がカーブしている場合は不具合が発生する可能性あり)
+      /// </summary>
+      /// <param name="StartDist">開始地点の距離程[m]</param>
+      /// <param name="CurveTrackName">分岐側軌道名(自線不可)</param>
+      /// <param name="StraightTrackName">直線側軌道名(0で自線)</param>
+      /// <param name="Num">分岐器の番数</param>
+      /// <param name="Gauge">軌間[m]</param>
+      public SWInfo One4TwoSWPut(double StartDist, TrackInfo CurveTrack, TrackInfo StraightTrack, int Num, double Gauge)
+      {
+        if (CurveTrack.TrackName == "0") throw new Exception("分岐側軌道に自線を設定することはできません。");
+        double Radius = 2 * Gauge * (Num ^ 2);
+        SWInfo sw = new SWInfo();
+        sw.DistBetweenSAndC = 0;
+        return sw;
+      }
+      public class TrackInfo
+      {
+        /// <summary>
+        /// 軌道名
+        /// </summary>
+        public string TrackName;
+
+      }
+      public class SWInfo
+      {
+        /// <summary>
+        /// 分機器のカーブ終了時の直線側と他線側との距離
+        /// </summary>
+        public double DistBetweenSAndC;
+        /// <summary>
+        /// 分岐器関数開始距離
+        /// </summary>
+        public double StartDistance;
+        /// <summary>
+        /// 分岐器関数終了距離
+        /// </summary>
+        public double EndDistance;
+      }
+    }
+
+
+    /// <summary>
     /// OutputListに構文を追加する
     /// </summary>
     /// <param name="Distance">距離程</param>
     /// <param name="Syntax">構文</param>
     static private void ListAdd(double Distance, string Syntax)
     {
+      int Ind = 0;
       try
       {
-        int Ind = Output.FindIndex(OutputList => OutputList.Distance == Distance);
+        Ind = Output.FindIndex(OutputList => OutputList.Distance == Distance);
+      }
+      catch (ArgumentNullException) { Output.Add(new OutputList(Distance, Syntax)); return; }
+      if (Ind< 0)
+      {
+        Output.Add(new OutputList(Distance, Syntax));
+      }
+      else
+      {
         Output[Ind].Syntax.Add(Syntax);
       }
-      catch (ArgumentNullException) { Output.Add(new OutputList(Distance, Syntax)); }
     }
   }
 }
