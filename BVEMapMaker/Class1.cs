@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TRtec.BVEMapMaker
+namespace TR.BVEMapMaker
 {
   /// <summary>
   /// BVE Mapファイル作成用クラス
@@ -959,6 +959,163 @@ namespace TRtec.BVEMapMaker
 
         }
 
+        private Track tk = new Track();
+        /// <summary>
+        /// 一つ前に設定されたX軸方向位置と平面曲線相対半径を指定の位置で引き継いで設定する
+        /// </summary>
+        /// <param name="D">設定する位置[m]</param>
+        public void XInterpolate(double D) => tk.XInterpolate(D, TrackName);
+        /// <summary>
+        /// 指定の距離程におけるX軸方向位置を設定する(平面曲線相対半径は一つ前の値が引き継がれる)
+        /// </summary>
+        /// <param name="D">設定する位置[m]</param>
+        /// <param name="X">X軸方向位置[m]</param>
+        public void XInterpolate(double D, double X) => tk.XInterpolate(D, TrackName, X);
+        /// <summary>
+        /// 指定の距離程におけるX軸方向位置と平面曲線相対半径を設定する
+        /// </summary>
+        /// <param name="D">設定する位置[m]</param>
+        /// <param name="X">X軸方向位置[m]</param>
+        /// <param name="R">平面曲線相対半径[m]</param>
+        public void XInterpolate(double D, double X, double R) => tk.XInterpolate(D, TrackName, X, R);
+        /// <summary>
+        /// 一つ前に設定されたY軸方向位置と縦曲線相対半径を指定の位置で引き継いで設定する
+        /// </summary>
+        /// <param name="D">設定する位置[m]</param>
+        public void YInterpolate(double D) => tk.YInterpolate(D, TrackName);
+        /// <summary>
+        /// 指定の距離程におけるY軸方向位置を設定する(縦曲線相対半径は一つ前の値が引き継がれる)
+        /// </summary>
+        /// <param name="D">設定する位置[m]</param>
+        /// <param name="Y">Y軸方向位置[m]</param>
+        public void YInterpolate(double D, double Y) => tk.YInterpolate(D, TrackName, Y);
+        /// <summary>
+        /// 指定の距離程におけるY軸方向位置と縦曲線相対半径を設定する
+        /// </summary>
+        /// <param name="D">設定する位置[m]</param>
+        /// <param name="Y">Y軸方向位置[m]</param>
+        /// <param name="R">縦曲線相対半径[m]</param>
+        public void YInterpolate(double D, double Y, double R) => tk.XInterpolate(D, TrackName, Y, R);
+
+        /// <summary>
+        /// 指定の距離程における位置や半径を自線と同一にする
+        /// </summary>
+        /// <param name="D">距離程[m]</param>
+        public void Position(double D) => Position(D, 0, 0, 0, 0);
+        /// <summary>
+        /// 指定の距離程におけるX軸方向位置を設定する(Y軸方向位置と各曲線相対半径は0[m])
+        /// </summary>
+        /// <param name="D">距離程[m]</param>
+        /// <param name="X">X軸方向位置[m]</param>
+        public void Position(double D, double X) => Position(D, X, 0, 0, 0);
+        /// <summary>
+        /// 指定の距離程における位置を設定する(各曲線相対半径は0[m])
+        /// </summary>
+        /// <param name="D">距離程[m]</param>
+        /// <param name="X">X軸方向位置[m]</param>
+        /// <param name="Y">Y軸方向位置[m]</param>
+        public void Position(double D, double X, double Y) => Position(D, X, Y, 0, 0);
+        /// <summary>
+        /// 指定の距離程における位置と平面曲線相対半径を設定する(縦曲線相対半径は0[m])
+        /// </summary>
+        /// <param name="D">距離程[m]</param>
+        /// <param name="X">X軸方向位置[m]</param>
+        /// <param name="Y">Y軸方向位置[m]</param>
+        /// <param name="Rx">平面曲線相対半径[m]</param>
+        public void Position(double D, double X, double Y, double Rx) => Position(D, X, Y, Rx, 0);
+        /// <summary>
+        /// 指定の距離程における位置と半径を設定する
+        /// </summary>
+        /// <param name="D">距離程[m]</param>
+        /// <param name="X">X軸方向位置[m]</param>
+        /// <param name="Y">Y軸方向位置[m]</param>
+        /// <param name="Rx">平面曲線相対半径[m]</param>
+        /// <param name="Ry">縦曲線相対半径[m]</param>
+        public void Position(double D, double X, double Y, double Rx, double Ry) => tk.Position(D, TrackName, X, Y, Rx, Ry);
+
+
+      }
+      /// <summary>
+      /// ストラクチャに関する各種情報を入れる
+      /// </summary>
+      public class StructureInfo
+      {
+        /// <summary>
+        /// ストラクチャに関する情報を設定する(ストラクチャの大きさは0mに設定されます。)
+        /// </summary>
+        /// <param name="SName">ストラクチャの名前</param>
+        public StructureInfo(string SName) => new StructureInfo(SName, string.Empty);
+        /// <summary>
+        /// ストラクチャに関する情報を設定する(ストラクチャの大きさは0mに設定されます。)
+        /// </summary>
+        /// <param name="SName">ストラクチャの名前</param>
+        /// <param name="SPath">ストラクチャファイルへのファイルパス</param>
+        public StructureInfo(string SName, string SPath) => new StructureInfo(SName, SPath, new double[3] { 0, 0, 0 });
+        /// <summary>
+        /// ストラクチャに関する情報を設定する(ストラクチャの原点座標は左下手前に設定されます。)
+        /// </summary>
+        /// <param name="SName">ストラクチャの名前</param>
+        /// <param name="SPath">ストラクチャファイルへのファイルパス</param>
+        /// <param name="size">ストラクチャの外形寸法(X,Y,Z)[m]</param>
+        public StructureInfo(string SName, string SPath, double[] size) => new StructureInfo(SName, SPath, size, new double[3] { 0, 0, 0 });
+        /// <summary>
+        /// ストラクチャに関する情報を設定する
+        /// </summary>
+        /// <param name="SName">ストラクチャの名前</param>
+        /// <param name="SPath">ストラクチャファイルへのファイルパス</param>
+        /// <param name="size">ストラクチャの外形寸法(X,Y,Z)[m]</param>
+        /// <param name="origin">ストラクチャの原点座標(左下手前からの距離)(X,Y,Z)[m]</param>
+        public StructureInfo(string SName, string SPath, double[] size, double[] origin)
+        {
+          if (size.Length != 3) throw new ArgumentOutOfRangeException("size", "sizeの配列の要素数は'3'である必要があります。");
+          if (origin.Length != 3) throw new ArgumentOutOfRangeException("orgin", "originの配列の要素数は'3'である必要があります。");
+          StructureName = SName;
+          StructurePath = SPath;
+          Size = size;
+          Origin = origin;
+        }
+
+        /// <summary>
+        /// ストラクチャ名を取得する。
+        /// </summary>
+        public string StructureName { get; }
+        /// <summary>
+        /// ストラクチャファイルへのファイルパスを取得する。
+        /// </summary>
+        public string StructurePath { get; }
+        /// <summary>
+        /// (X,Y,Z)の順に、メートル単位でストラクチャの外形寸法を取得する
+        /// </summary>
+        public double[] Size { get; }
+        /// <summary>
+        /// (X,Y,Z)の順に、メートル単位で原点座標(左下手前からの距離)を取得する
+        /// </summary>
+        public double[] Origin { get; }
+      }
+      /// <summary>
+      /// ストラクチャを設定するクラス
+      /// </summary>
+      public class StructurePut
+      {
+        /// <summary>
+        /// StructurePutクラスを初期化する
+        /// </summary>
+        /// <param name="SName">ストラクチャ名</param>
+        public StructurePut(string SName) => new StructurePut(new StructureInfo(SName));
+        /// <summary>
+        /// StructurePutクラスを初期化する
+        /// </summary>
+        /// <param name="s">ストラクチャ情報</param>
+        public StructurePut(StructureInfo s) => si = s;
+
+        private StructureInfo si { get; }
+        private Structure sr = new Structure();
+
+        /// <summary>
+        /// 自軌道の指定の距離程にストラクチャを設置する
+        /// </summary>
+        /// <param name="D">距離程</param>
+        public void Put(double D) => sr.Put0(D, si.StructureName, 0, 0);
       }
     }
 
